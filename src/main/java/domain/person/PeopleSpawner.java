@@ -1,14 +1,16 @@
 package domain.person;
 
-import domain.Controller.SystemController;
+import domain.controller.SystemController;
 import domain.building.Floor;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.UUID;
 
 @Getter
+@Slf4j
 public class PeopleSpawner implements Runnable {
 
     private final SystemController controller;
@@ -38,19 +40,7 @@ public class PeopleSpawner implements Runnable {
 
             Person person = new Person(currentFloorNumber, numberOfDesiredFloor,
                     weight, UUID.randomUUID().toString());
-
-            Floor floor = floors.get(currentFloorNumber);
-
-            switch (person.getIntent()) {
-                case MOVE_UP:
-                    floor.addPersonInQueueUp(person);
-                    controller.addFloorInQueueUp(floor);
-                    break;
-                case MOVE_DOWN:
-                    floor.addPersonInQueueDown(person);
-                    controller.addFloorInQueueDown(floor);
-                    break;
-            }
+            controller.addPerson(person);
 
             Thread.sleep(generationRate);
         }
