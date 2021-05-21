@@ -1,4 +1,4 @@
-package model;
+package domain.building.elevator;
 
 import lombok.Getter;
 

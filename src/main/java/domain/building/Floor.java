@@ -4,8 +4,9 @@ import domain.person.Person;
 import lombok.Getter;
 
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
+
+import static com.google.common.base.Preconditions.*;
 
 @Getter
 public class Floor {
@@ -16,6 +17,7 @@ public class Floor {
     private final int floorNumber;
 
     public Floor(int floorNumber) {
+        checkArgument(floorNumber >= 0, "The floor number must be non-negative");
         this.floorNumber = floorNumber;
     }
 

@@ -1,7 +1,7 @@
-package domain.person;
+package domain;
 
-import domain.controller.SystemController;
 import domain.building.Floor;
+import domain.person.Person;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +30,7 @@ public class PeopleSpawner implements Runnable {
     @Override
     public void run() {
         while (work) {
+            Thread.sleep(generationRate);
             int currentFloorNumber = getNumberInRange(0, floors.size() - 1);
             int numberOfDesiredFloor;
             do {
@@ -41,12 +42,10 @@ public class PeopleSpawner implements Runnable {
             Person person = new Person(currentFloorNumber, numberOfDesiredFloor,
                     weight, UUID.randomUUID().toString());
             controller.addPerson(person);
-
-            Thread.sleep(generationRate);
         }
     }
 
-    private void finish() {
+    public void finish() {
         work = false;
     }
 

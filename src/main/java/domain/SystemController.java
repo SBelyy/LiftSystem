@@ -1,17 +1,20 @@
-package domain.controller;
+package domain;
 
 import domain.Direction;
 import domain.building.Building;
 import domain.building.Floor;
 import domain.building.elevator.Elevator;
 import domain.building.elevator.ElevatorStatus;
-import domain.person.PeopleSpawner;
+import domain.PeopleSpawner;
 import domain.person.Person;
 import domain.person.PersonState;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import storage.SystemStorage;
 
 import java.util.*;
+
+import static com.google.common.base.Preconditions.*;
 
 @Slf4j
 @Getter
@@ -22,19 +25,22 @@ public class SystemController {
 
     private final Building building;
     private final PeopleSpawner spawner;
+    private final SystemStorage storage;
 
-    public SystemController(Building building, int generationRateInMillis) {
+    public SystemController(Building building, SystemStorage storage, int generationRateInMillis) {
+        checkNotNull(building, "There is no such building");
+        checkArgument(generationRateInMillis > 0, "The generation rate must be positive");
         this.building = building;
+        this.storage = storage;
 
-        for (Elevator elevator : building.getElevators()) {
-            elevator.setController(this);
-        }
+        building.getElevators().forEach(elevator -> elevator.setController(this));
 
         spawner = new PeopleSpawner(this, generationRateInMillis, building.getFloors());
+
     }
 
-    public void addPerson(Person person) {
-        Floor floor = building.getFloors().get(person.getCurrentFloorNumber());
+    public synchronized void addPerson(Person person) {
+        Floor floor = building.getFloors().get(person.getInitialFloorNumber());
 
         Direction direction = person.getDirection();
         switch (direction) {
@@ -58,7 +64,6 @@ public class SystemController {
         Queue<Person> peopleInQueue;
         switch (direction) {
             case MOVE_UP:
-                /*TODO можно ли так делать или есть более красивый способ?*/
                 peopleInQueue = floor.getQueueUp();
                 break;
             case MOVE_DOWN:
@@ -76,9 +81,9 @@ public class SystemController {
                 peopleInElevator.add(person);
                 person.setState(PersonState.MOVES_IN_ELEVATOR);
                 currentCapacity -= weight;
-                peopleInQueue.remove(person);
             }
         }
+        peopleInQueue.removeAll(peopleInElevator);
 
         if (!peopleInQueue.isEmpty()) {
             addFloorInQueue(direction, floor);
@@ -104,19 +109,31 @@ public class SystemController {
 
     private boolean checkAndAssignTaskToElevator(Floor floor, Person person) {
         for (Elevator elevator : building.getElevators()) {
-            if (elevator.getStatus() == ElevatorStatus.WAITS) {
-                elevator.doAction(floor, person.getDirection());
-                return true;
+
+            if (!ElevatorStatus.WAITS.equals(elevator.getStatus())) {
+                continue;
             }
+
+            elevator.doAction(floor, person.getDirection());
+
+            synchronized (this) {
+                this.notifyAll();
+            }
+
+            return true;
         }
+
         return false;
     }
 
-    public void getTaskIfAny(Elevator elevator) {
+    public synchronized void getTaskIfAny(Elevator elevator) {
         if (queueDown.size() > queueUp.size()) {
             elevator.doAction(queueDown.poll(), Direction.MOVE_DOWN);
-        } else if (queueDown.size() < queueUp.size()){
+        } else if (queueDown.size() < queueUp.size()) {
             elevator.doAction(queueUp.poll(), Direction.MOVE_UP);
+        }
+        synchronized (this) {
+            this.notifyAll();
         }
     }
 
@@ -131,6 +148,22 @@ public class SystemController {
 
         elevatorThreads.forEach(Thread::start);
         spawnerThread.start();
+    }
+
+    public void stopSystem() {
+        for (Elevator elevator : building.getElevators()) {
+            elevator.finish();
+        }
+        spawner.finish();
+    }
+
+    public synchronized void updateStatistics(Elevator elevator, List<Person> removedPeople) {
+        /*TODO сделать два метода(вход - выход)*/
+        for (Person person : removedPeople) {
+            storage.persistInitialFloorsForElevator(elevator, person.getNumberOfDesiredFloor());
+            storage.persistFinalFloorsForElevator(elevator, person.getInitialFloorNumber());
+        }
+
     }
 
 }

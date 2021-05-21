@@ -2,7 +2,7 @@ package domain.building.elevator;
 
 import domain.Direction;
 import domain.building.Floor;
-import domain.controller.SystemController;
+import domain.SystemController;
 import domain.person.Person;
 import domain.person.PersonState;
 import lombok.Getter;
@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.*;
@@ -22,6 +23,7 @@ public class Elevator implements Runnable {
     private final int speedInMillis;
     private final int doorClosingSpeedInMillis;
     private final int capacity;
+    private final String id;
 
     private final List<Person> people = new ArrayList<>();
 
@@ -42,6 +44,7 @@ public class Elevator implements Runnable {
         currentCapacity = capacity;
 
         status = ElevatorStatus.WAITS;
+        id = UUID.randomUUID().toString();
         currentFloor = 0;
 
         work = true;
@@ -52,6 +55,10 @@ public class Elevator implements Runnable {
     public void run() {
         while (work) {
             if (targetFloor == null) {
+                //log.debug("{} is waiting for a task", this);
+                synchronized (controller) {
+                    controller.wait();
+                }
                 continue;
             }
 
@@ -91,7 +98,7 @@ public class Elevator implements Runnable {
         }
     }
 
-    private void movingToTheTask (int target) {
+    private void movingToTheTask(int target) {
         if (target < currentFloor) {
             moving(Direction.MOVE_DOWN);
         } else {
@@ -100,7 +107,7 @@ public class Elevator implements Runnable {
     }
 
     @SneakyThrows
-    private void moving(Direction direction){
+    private void moving(Direction direction) {
         Thread.sleep(speedInMillis);
         status = ElevatorStatus.MOVING;
 
@@ -117,20 +124,25 @@ public class Elevator implements Runnable {
         List<Person> peopleToRemove = new ArrayList<>();
 
         for (Person person : people) {
-            if (person.getNumberOfDesiredFloor() == destinationFloor) {
-                peopleToRemove.add(person);
-                person.setState(PersonState.ARRIVED);
 
-                log.debug("{} got out of the {}", person, this);
-
-                currentCapacity += person.getWeightInKilo();
+            if (person.getNumberOfDesiredFloor() != destinationFloor) {
+                continue;
             }
+
+            peopleToRemove.add(person);
+            person.setState(PersonState.ARRIVED);
+
+            log.debug("{} got out of the {}", person, this);
+
+            currentCapacity += person.getWeightInKilo();
+
         }
 
         people.removeAll(peopleToRemove);
+        controller.updateStatistics(this, peopleToRemove);
     }
 
-    private void finish() {
+    public void finish() {
         work = false;
     }
 
@@ -161,8 +173,17 @@ public class Elevator implements Runnable {
     }
 
     public SystemController getController() {
-        checkArgument(controller != null, "System controller not assigned yet");
+        checkNotNull(controller, "System controller not assigned yet");
         return controller;
+    }
+
+    @Override
+    public String toString() {
+        return "Elevator{" +
+                "id=" + id +
+                ", capacity='" + capacity + '\'' +
+                ", currentCapacity=" + currentCapacity +
+                '}';
     }
 
 }
