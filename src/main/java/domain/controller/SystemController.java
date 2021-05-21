@@ -1,4 +1,4 @@
-package domain;
+package domain.controller;
 
 import domain.Direction;
 import domain.building.Building;
@@ -157,13 +157,13 @@ public class SystemController {
         spawner.finish();
     }
 
-    public synchronized void updateStatistics(Elevator elevator, List<Person> removedPeople) {
-        /*TODO сделать два метода(вход - выход)*/
-        for (Person person : removedPeople) {
-            storage.persistInitialFloorsForElevator(elevator, person.getNumberOfDesiredFloor());
-            storage.persistFinalFloorsForElevator(elevator, person.getInitialFloorNumber());
-        }
+    public synchronized void peopleGotOut(Elevator elevator, List<Person> removedPeople) {
+        removedPeople.forEach(person -> storage.persistFinalFloorsForElevator(elevator, person.getInitialFloorNumber()));
 
+    }
+
+    public synchronized void peopleEntered(Elevator elevator, List<Person> people) {
+        people.forEach(person -> storage.persistInitialFloorsForElevator(elevator, person.getNumberOfDesiredFloor()));
     }
 
 }

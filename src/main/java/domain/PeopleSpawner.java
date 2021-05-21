@@ -1,6 +1,7 @@
 package domain;
 
 import domain.building.Floor;
+import domain.controller.SystemController;
 import domain.person.Person;
 import lombok.Getter;
 import lombok.SneakyThrows;

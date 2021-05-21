@@ -1,5 +1,5 @@
 import domain.building.Building;
-import domain.SystemController;
+import domain.controller.SystemController;
 import lombok.SneakyThrows;
 import domain.building.elevator.ElevatorConfiguration;
 import storage.InMemorySystemStorage;

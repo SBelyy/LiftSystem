@@ -2,7 +2,7 @@ package domain.building.elevator;
 
 import domain.Direction;
 import domain.building.Floor;
-import domain.SystemController;
+import domain.controller.SystemController;
 import domain.person.Person;
 import domain.person.PersonState;
 import lombok.Getter;
@@ -139,7 +139,7 @@ public class Elevator implements Runnable {
         }
 
         people.removeAll(peopleToRemove);
-        controller.updateStatistics(this, peopleToRemove);
+        controller.peopleGotOut(this, peopleToRemove);
     }
 
     public void finish() {
@@ -166,6 +166,7 @@ public class Elevator implements Runnable {
             currentCapacity -= person.getWeightInKilo();
             log.debug("{} entered {}", person, this);
         }
+        controller.peopleEntered(this, persons);
     }
 
     public void setController(SystemController controller) {
