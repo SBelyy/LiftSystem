@@ -25,6 +25,7 @@ public class Person {
     public Person(int currentFloorNumber, int numberOfDesiredFloor, int weightInKilo, String id) {
         checkArgument(currentFloorNumber >= 0, "The current floor number must be non-negative");
         checkArgument(numberOfDesiredFloor >= 0, "The number of desired floor must be non-negative");
+        checkArgument(weightInKilo > 0, "Weight must be positive");
 
         this.initialFloorNumber = currentFloorNumber;
         this.numberOfDesiredFloor = numberOfDesiredFloor;
@@ -38,6 +39,7 @@ public class Person {
         } else {
             direction = Direction.MOVE_DOWN;
         }
+
         log.debug("{} is created", this);
     }
 
