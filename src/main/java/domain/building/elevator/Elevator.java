@@ -132,10 +132,8 @@ public class Elevator implements Runnable {
             peopleToRemove.add(person);
             person.setState(PersonState.ARRIVED);
 
-            log.debug("{} got out of the {}", person, this);
-
             currentCapacity += person.getWeightInKilo();
-
+            log.debug("{} got out of the {}", person, this);
         }
 
         people.removeAll(peopleToRemove);
@@ -150,7 +148,10 @@ public class Elevator implements Runnable {
         checkArgument(status == ElevatorStatus.WAITS, "The elevator is busy now");
         this.targetFloor = targetFloor;
         this.direction = direction;
-        log.debug("{} got a new task", this);
+        if (targetFloor != null) {
+            status = ElevatorStatus.GOT_A_NEW_TASK;
+            log.debug("{} got a new task", this);
+        }
     }
 
     private List<Integer> getStopovers() {

@@ -29,14 +29,14 @@ public class SystemController {
 
     public SystemController(Building building, SystemStorage storage, int generationRateInMillis) {
         checkNotNull(building, "There is no such building");
+        checkNotNull(storage, "There is no such storage");
         checkArgument(generationRateInMillis > 0, "The generation rate must be positive");
         this.building = building;
         this.storage = storage;
 
         building.getElevators().forEach(elevator -> elevator.setController(this));
 
-        spawner = new PeopleSpawner(this, generationRateInMillis, building.getFloors());
-
+        spawner = new PeopleSpawner(this, generationRateInMillis, building.getFloors().size());
     }
 
     public synchronized void addPerson(Person person) {
@@ -127,9 +127,9 @@ public class SystemController {
     }
 
     public synchronized void getTaskIfAny(Elevator elevator) {
-        if (queueDown.size() > queueUp.size()) {
+        if (queueDown.size() >= queueUp.size()) {
             elevator.doAction(queueDown.poll(), Direction.MOVE_DOWN);
-        } else if (queueDown.size() < queueUp.size()) {
+        } else {
             elevator.doAction(queueUp.poll(), Direction.MOVE_UP);
         }
         synchronized (this) {
@@ -155,6 +155,9 @@ public class SystemController {
             elevator.finish();
         }
         spawner.finish();
+        synchronized (this) {
+            notifyAll();
+        }
     }
 
     public synchronized void peopleGotOut(Elevator elevator, List<Person> removedPeople) {

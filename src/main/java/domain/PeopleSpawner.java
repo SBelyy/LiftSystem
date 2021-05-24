@@ -1,13 +1,11 @@
 package domain;
 
-import domain.building.Floor;
 import domain.controller.SystemController;
 import domain.person.Person;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
 import java.util.UUID;
 
 @Getter
@@ -16,13 +14,13 @@ public class PeopleSpawner implements Runnable {
 
     private final SystemController controller;
     private final int generationRate;
-    private final List<Floor> floors;
+    private final int totalNumberOfFloors;
 
     private volatile boolean work;
 
-    public PeopleSpawner(SystemController controller, int peopleGenerationRate, List<Floor> floors) {
+    public PeopleSpawner(SystemController controller, int peopleGenerationRate, int totalNumberOfFloors) {
         this.controller = controller;
-        this.floors = floors;
+        this.totalNumberOfFloors = totalNumberOfFloors;
         generationRate = peopleGenerationRate;
         work = true;
     }
@@ -32,10 +30,10 @@ public class PeopleSpawner implements Runnable {
     public void run() {
         while (work) {
             Thread.sleep(generationRate);
-            int currentFloorNumber = getNumberInRange(0, floors.size() - 1);
+            int currentFloorNumber = getNumberInRange(0, totalNumberOfFloors - 1);
             int numberOfDesiredFloor;
             do {
-                numberOfDesiredFloor = getNumberInRange(0, floors.size() - 1);
+                numberOfDesiredFloor = getNumberInRange(0, totalNumberOfFloors - 1);
             } while (currentFloorNumber == numberOfDesiredFloor);
 
             int weight = getNumberInRange(5, 130);
